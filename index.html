@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wrestling Timer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #0d0d1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2em;
+      color: #e94560;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 14px;
+      border: 1px solid #1e2f52;
+    }
+
+    .card h2 {
+      font-size: 1em;
+      font-weight: 600;
+      color: #e94560;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ── Form rows ── */
+    .form-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .form-row:last-child { margin-bottom: 0; }
+
+    label {
+      font-size: 0.88em;
+      color: #9a9ab0;
+      white-space: nowrap;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      background: #0f3460;
+      border: 1px solid #2a4a7f;
+      border-radius: 6px;
+      color: #fff;
+      padding: 6px 10px;
+      font-size: 0.92em;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="number"]:focus,
+    input[type="text"]:focus { border-color: #e94560; }
+
+    input[type="number"] { width: 68px; }
+    input[type="text"]   { width: 170px; }
+
+    /* ── Buttons ── */
+    button {
+      background: #e94560;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 16px;
+      cursor: pointer;
+      font-size: 0.9em;
+      font-weight: 600;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    button:hover  { background: #c73652; }
+    button:active { transform: scale(0.96); }
+
+    button.muted {
+      background: #1a3a6a;
+    }
+    button.muted:hover { background: #254e8f; }
+
+    /* ── Timer display ── */
+    .timer-card {
+      text-align: center;
+      padding: 28px 20px 20px;
+    }
+
+    #timerClock {
+      font-size: clamp(3.5em, 14vw, 6em);
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+      color: #e94560;
+      letter-spacing: 4px;
+      transition: color 0.4s;
+    }
+    #timerClock.rest { color: #4caf50; }
+
+    #roundInfo {
+      font-size: 1.1em;
+      color: #9a9ab0;
+      margin-top: 6px;
+    }
+
+    #statusBar {
+      font-size: 0.95em;
+      color: #666;
+      min-height: 22px;
+      margin-top: 4px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .controls button {
+      font-size: 1.05em;
+      padding: 11px 28px;
+      border-radius: 8px;
+      min-width: 110px;
+    }
+
+    /* ── Speech log ── */
+    .speech-log {
+      margin-top: 14px;
+      background: #0a0a16;
+      border-radius: 6px;
+      padding: 8px 10px;
+      max-height: 90px;
+      overflow-y: auto;
+      font-size: 0.82em;
+      color: #7a8aaa;
+    }
+    .speech-log p { margin-bottom: 2px; }
+    .speech-log p span.spoken { color: #e8c76a; font-style: italic; }
+
+    /* ── Word tags (random words) ── */
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 10px;
+      min-height: 10px;
+    }
+
+    .tag {
+      background: #0f3460;
+      border: 1px solid #2a4a7f;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.88em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tag-remove {
+      background: none;
+      border: none;
+      color: #e94560;
+      cursor: pointer;
+      padding: 0;
+      font-size: 1em;
+      font-weight: bold;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+    .tag-remove:hover { color: #ff6b6b; background: none; transform: none; }
+
+    /* ── Timed word rows ── */
+    .tw-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f3460;
+      border: 1px solid #2a4a7f;
+      border-radius: 8px;
+      padding: 7px 12px;
+      margin-bottom: 6px;
+      font-size: 0.9em;
+    }
+
+    .tw-badge {
+      background: #e94560;
+      color: #fff;
+      border-radius: 4px;
+      padding: 2px 9px;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      font-size: 0.95em;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .tw-word {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .hint {
+      font-size: 0.8em;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    /* ── Checkbox ── */
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88em;
+      color: #9a9ab0;
+    }
+    .check-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #e94560;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🥋 Wrestling Timer</h1>
+
+  <!-- ── Timer Display ── -->
+  <div class="card timer-card">
+    <div id="timerClock">00:00</div>
+    <div id="roundInfo">Round — / —</div>
+    <div id="statusBar">Configure below and press Start</div>
+    <div class="speech-log" id="speechLog"></div>
+    <div class="controls">
+      <button id="btnStartPause" onclick="startPause()">▶ Start</button>
+      <button class="muted" onclick="resetTimer()">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- ── Round Config ── -->
+  <div class="card">
+    <h2>⚙️ Round Configuration</h2>
+    <div class="form-row">
+      <label>Number of rounds</label>
+      <input type="number" id="cfgRounds" value="3" min="1" max="50">
+    </div>
+    <div class="form-row">
+      <label>Round time</label>
+      <input type="number" id="cfgRoundMin" value="3" min="0" max="59"> min
+      <input type="number" id="cfgRoundSec" value="0"  min="0" max="59"> sec
+    </div>
+    <div class="form-row">
+      <label>Rest between rounds</label>
+      <input type="number" id="cfgRestMin" value="1" min="0" max="59"> min
+      <input type="number" id="cfgRestSec" value="0" min="0" max="59"> sec
+    </div>
+  </div>
+
+  <!-- ── Timed Announcements ── -->
+  <div class="card">
+    <h2>🔔 Timed Announcements</h2>
+    <p class="hint">Speak a word once when the clock reaches a specific value each round.</p>
+    <div id="twList"></div>
+    <div class="form-row">
+      <label>When clock shows</label>
+      <input type="number" id="twMin" value="1" min="0" max="59"> min
+      <input type="number" id="twSec" value="30" min="0" max="59"> sec
+      <label>say</label>
+      <input type="text" id="twWord" placeholder="e.g. halfway">
+      <button onclick="addTimedWord()">+ Add</button>
+    </div>
+  </div>
+
+  <!-- ── Random Announcements ── -->
+  <div class="card">
+    <h2>🎲 Random Announcements</h2>
+    <p class="hint">During each round, randomly speak one of these words at a set interval.</p>
+    <div class="tag-list" id="rwList"></div>
+    <div class="form-row">
+      <input type="text" id="rwWord" placeholder="e.g. left, right …">
+      <button onclick="addRandomWord()">+ Add</button>
+    </div>
+    <div class="form-row" style="margin-top:6px">
+      <label>Speak every</label>
+      <input type="number" id="rwMinInt" value="3" min="1" max="600"> to
+      <input type="number" id="rwMaxInt" value="3" min="1" max="600"> seconds
+    </div>
+    <div class="form-row">
+      <label class="check-row">
+        <input type="checkbox" id="rwEnabled" checked>
+        Enable random announcements
+      </label>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+  // ── Data ────────────────────────────────────────────────────────────────────
+
+  /** @type {{timeLeft: number, word: string}[]}  timeLeft = clock value (seconds remaining) */
+  let timedWords = [];
+
+  /** @type {string[]} */
+  let randomWords = [];
+
+  // ── Timer state ─────────────────────────────────────────────────────────────
+
+  const timer = {
+    running:      false,
+    currentRound: 1,
+    totalRounds:  1,
+    roundTime:    0,   // seconds for a full round
+    timeLeft:     0,   // seconds left in current period
+    isResting:    false,
+    tickId:       null,
+    nextRandIn:   0,   // seconds until next random-word fires
+    /** @type {Set<number>} timed-word timeLeft values already fired this period */
+    firedKeys:    new Set(),
+  };
+
+  // ── Config helpers ───────────────────────────────────────────────────────────
+
+  function getConfig() {
+    return {
+      rounds:    Math.max(1, parseInt(document.getElementById('cfgRounds').value)   || 1),
+      roundTime: (parseInt(document.getElementById('cfgRoundMin').value) || 0) * 60
+               + (parseInt(document.getElementById('cfgRoundSec').value) || 0),
+      restTime:  (parseInt(document.getElementById('cfgRestMin').value)  || 0) * 60
+               + (parseInt(document.getElementById('cfgRestSec').value)  || 0),
+    };
+  }
+
+  function getRandConfig() {
+    const min = Math.max(1, parseInt(document.getElementById('rwMinInt').value) || 3);
+    const max = Math.max(min, parseInt(document.getElementById('rwMaxInt').value) || 3);
+    const enabled = document.getElementById('rwEnabled').checked;
+    return { min, max, enabled };
+  }
+
+  // ── Speech ────────────────────────────────────────────────────────────────────
+
+  // Queue so that short words don't overlap each other
+  const speechQueue = [];
+  let speechBusy = false;
+
+  function speak(text) {
+    if (!text) return;
+    speechQueue.push(text);
+    drainSpeech();
+  }
+
+  function drainSpeech() {
+    if (speechBusy || speechQueue.length === 0) return;
+    const text = speechQueue.shift();
+    speechBusy = true;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate  = 1.1;
+    utter.pitch = 1;
+    utter.onend = utter.onerror = () => {
+      speechBusy = false;
+      drainSpeech();
+    };
+    window.speechSynthesis.speak(utter);
+    appendSpeechLog(text);
+  }
+
+  function appendSpeechLog(text) {
+    const log = document.getElementById('speechLog');
+    const p = document.createElement('p');
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    p.innerHTML = `${now} — <span class="spoken">"${escHtml(text)}"</span>`;
+    log.insertBefore(p, log.firstChild);
+    while (log.children.length > 12) log.removeChild(log.lastChild);
+  }
+
+  // ── Utilities ─────────────────────────────────────────────────────────────────
+
+  function fmt(secs) {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function randInt(min, max) {
+    return min + Math.floor(Math.random() * (max - min + 1));
+  }
+
+  // ── Display ───────────────────────────────────────────────────────────────────
+
+  function updateDisplay() {
+    const clock = document.getElementById('timerClock');
+    clock.textContent = fmt(timer.timeLeft);
+    clock.className   = timer.isResting ? 'rest' : '';
+
+    document.getElementById('roundInfo').textContent =
+      `Round ${timer.currentRound} / ${timer.totalRounds}`;
+
+    let status = '';
+    if (!timer.running && timer.timeLeft === 0 && !timer.tickId) {
+      status = 'Configure below and press Start';
+    } else if (!timer.running) {
+      status = '⏸ Paused';
+    } else if (timer.isResting) {
+      status = '🟢 Rest';
+    } else {
+      status = `🔴 Round ${timer.currentRound} — Fight!`;
+    }
+    document.getElementById('statusBar').textContent = status;
+  }
+
+  // ── Timer core ────────────────────────────────────────────────────────────────
+
+  function scheduleNextRand() {
+    const rc = getRandConfig();
+    timer.nextRandIn = randInt(rc.min, rc.max);
+  }
+
+  function tick() {
+    // ── period expired ──────────────────────────────────────────────────────
+    if (timer.timeLeft <= 0) {
+      if (timer.isResting) {
+        // Rest → next round
+        startRound(timer.currentRound + 1);
+      } else {
+        // Round → rest or done
+        const cfg = getConfig();
+        if (timer.currentRound >= timer.totalRounds) {
+          finishWorkout();
+        } else if (cfg.restTime > 0) {
+          startRest(cfg.restTime);
+        } else {
+          startRound(timer.currentRound + 1);
+        }
+      }
+      return;
+    }
+
+    // ── decrement ───────────────────────────────────────────────────────────
+    timer.timeLeft--;
+
+    // ── fire timed words (rounds only) ──────────────────────────────────────
+    if (!timer.isResting) {
+      for (const tw of timedWords) {
+        if (timer.timeLeft === tw.timeLeft && !timer.firedKeys.has(tw.timeLeft)) {
+          timer.firedKeys.add(tw.timeLeft);
+          speak(tw.word);
+        }
+      }
+
+      // ── fire random word ─────────────────────────────────────────────────
+      const rc = getRandConfig();
+      if (rc.enabled && randomWords.length > 0) {
+        timer.nextRandIn--;
+        if (timer.nextRandIn <= 0) {
+          speak(randomWords[Math.floor(Math.random() * randomWords.length)]);
+          scheduleNextRand();
+        }
+      }
+    }
+
+    updateDisplay();
+  }
+
+  function startRound(roundNumber) {
+    const cfg = getConfig();
+    timer.currentRound = roundNumber;
+    timer.timeLeft     = cfg.roundTime;
+    timer.isResting    = false;
+    timer.firedKeys    = new Set();
+    scheduleNextRand();
+    speak(`Round ${roundNumber}`);
+    updateDisplay();
+  }
+
+  function startRest(restTime) {
+    timer.isResting = true;
+    timer.timeLeft  = restTime;
+    speak('Rest');
+    updateDisplay();
+  }
+
+  function finishWorkout() {
+    clearInterval(timer.tickId);
+    timer.tickId  = null;
+    timer.running = false;
+    timer.timeLeft = 0;
+    updateDisplay();
+    document.getElementById('statusBar').textContent = '✅ Workout complete!';
+    document.getElementById('btnStartPause').textContent = '▶ Start';
+    speak('Workout complete');
+  }
+
+  // ── Controls ──────────────────────────────────────────────────────────────────
+
+  function startPause() {
+    if (timer.running) {
+      // Pause
+      clearInterval(timer.tickId);
+      timer.tickId  = null;
+      timer.running = false;
+      document.getElementById('btnStartPause').textContent = '▶ Resume';
+      updateDisplay();
+    } else {
+      // Start / Resume
+      const cfg = getConfig();
+
+      if (cfg.roundTime === 0) {
+        alert('Please set a round time greater than 0.');
+        return;
+      }
+
+      if (!timer.tickId && timer.timeLeft === 0) {
+        // Fresh start
+        timer.totalRounds  = cfg.rounds;
+        timer.currentRound = 1;
+        timer.timeLeft     = cfg.roundTime;
+        timer.roundTime    = cfg.roundTime;
+        timer.isResting    = false;
+        timer.firedKeys    = new Set();
+        scheduleNextRand();
+        speak('Round 1');
+      }
+
+      timer.running = true;
+      timer.tickId  = setInterval(tick, 1000);
+      document.getElementById('btnStartPause').textContent = '⏸ Pause';
+      updateDisplay();
+    }
+  }
+
+  function resetTimer() {
+    clearInterval(timer.tickId);
+    timer.tickId       = null;
+    timer.running      = false;
+    timer.timeLeft     = 0;
+    timer.currentRound = 1;
+    timer.isResting    = false;
+    timer.firedKeys    = new Set();
+    window.speechSynthesis.cancel();
+    speechQueue.length = 0;
+    speechBusy         = false;
+    document.getElementById('btnStartPause').textContent = '▶ Start';
+    const cfg = getConfig();
+    timer.totalRounds = cfg.rounds;
+    timer.timeLeft    = cfg.roundTime;
+    updateDisplay();
+  }
+
+  // ── Timed words ───────────────────────────────────────────────────────────────
+
+  function addTimedWord() {
+    const min  = parseInt(document.getElementById('twMin').value)  || 0;
+    const sec  = parseInt(document.getElementById('twSec').value)  || 0;
+    const word = document.getElementById('twWord').value.trim();
+    if (!word) return;
+    const timeLeft = min * 60 + sec;
+    // Avoid exact duplicate
+    if (timedWords.some(t => t.timeLeft === timeLeft && t.word === word)) return;
+    timedWords.push({ timeLeft, word });
+    timedWords.sort((a, b) => b.timeLeft - a.timeLeft);
+    renderTimedWords();
+    document.getElementById('twWord').value = '';
+  }
+
+  function removeTimedWord(idx) {
+    timedWords.splice(idx, 1);
+    renderTimedWords();
+  }
+
+  function renderTimedWords() {
+    const list = document.getElementById('twList');
+    list.innerHTML = '';
+    timedWords.forEach((tw, i) => {
+      const div = document.createElement('div');
+      div.className = 'tw-row';
+      div.innerHTML =
+        `<span class="tw-badge">${fmt(tw.timeLeft)}</span>` +
+        `<span class="tw-word">${escHtml(tw.word)}</span>` +
+        `<button class="muted" style="padding:3px 10px;font-size:0.82em" onclick="removeTimedWord(${i})">✕</button>`;
+      list.appendChild(div);
+    });
+  }
+
+  // ── Random words ─────────────────────────────────────────────────────────────
+
+  function addRandomWord() {
+    const word = document.getElementById('rwWord').value.trim();
+    if (!word || randomWords.includes(word)) return;
+    randomWords.push(word);
+    renderRandomWords();
+    document.getElementById('rwWord').value = '';
+  }
+
+  function removeRandomWord(idx) {
+    randomWords.splice(idx, 1);
+    renderRandomWords();
+  }
+
+  function renderRandomWords() {
+    const list = document.getElementById('rwList');
+    list.innerHTML = '';
+    randomWords.forEach((w, i) => {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.innerHTML =
+        `${escHtml(w)}<button class="tag-remove" onclick="removeRandomWord(${i})">✕</button>`;
+      list.appendChild(span);
+    });
+  }
+
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────────
+
+  document.getElementById('twWord').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTimedWord();
+  });
+  document.getElementById('rwWord').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addRandomWord();
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────────
+
+  (function init() {
+    const cfg = getConfig();
+    timer.totalRounds = cfg.rounds;
+    timer.timeLeft    = cfg.roundTime;
+    updateDisplay();
+  })();
+</script>
+</body>
+</html>
