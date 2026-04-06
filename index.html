@@ -253,7 +253,7 @@
   <!-- ── Timer Display ── -->
   <div class="card timer-card">
     <div id="timerClock">00:00</div>
-    <div id="roundInfo">Round — / —</div>
+    <div id="roundInfo">Round - / -</div>
     <div id="statusBar">Configure below and press Start</div>
     <div class="speech-log" id="speechLog"></div>
     <div class="controls">
@@ -307,8 +307,8 @@
     </div>
     <div class="form-row" style="margin-top:6px">
       <label>Speak every</label>
-      <input type="number" id="rwMinInt" value="3" min="1" max="600"> to
-      <input type="number" id="rwMaxInt" value="3" min="1" max="600"> seconds
+      <input type="number" id="rwMinInterval" value="3" min="1" max="600"> to
+      <input type="number" id="rwMaxInterval" value="3" min="1" max="600"> seconds
     </div>
     <div class="form-row">
       <label class="check-row">
@@ -357,8 +357,8 @@
   }
 
   function getRandConfig() {
-    const min = Math.max(1, parseInt(document.getElementById('rwMinInt').value) || 3);
-    const max = Math.max(min, parseInt(document.getElementById('rwMaxInt').value) || 3);
+    const min = Math.max(1, parseInt(document.getElementById('rwMinInterval').value) || 3);
+    const max = Math.max(min, parseInt(document.getElementById('rwMaxInterval').value) || 3);
     const enabled = document.getElementById('rwEnabled').checked;
     return { min, max, enabled };
   }
